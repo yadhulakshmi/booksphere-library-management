@@ -1,0 +1,100 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+@use './styles/tokens' as t;
+@use './styles/books';
+@use './styles/members';
+@use './styles/circulation';
+@use './styles/library-finance';
+@use './styles/analytics';
+
+@include mat.core();
+
+$primary: mat.define-palette(map.merge(mat.$indigo-palette, (500: t.$navy)));
+$accent: mat.define-palette(map.merge(mat.$teal-palette, (700: t.$teal)), 700, 100, 900);
+$theme: mat.define-light-theme((
+  color: (primary: $primary, accent: $accent),
+  typography: mat.define-typography-config($font-family: 'Roboto, Helvetica Neue, sans-serif')
+));
+@include mat.core-theme($theme);
+@include mat.autocomplete-theme($theme);
+@include mat.button-theme($theme);
+@include mat.dialog-theme($theme);
+@include mat.form-field-theme($theme);
+@include mat.icon-theme($theme);
+@include mat.input-theme($theme);
+@include mat.menu-theme($theme);
+@include mat.paginator-theme($theme);
+@include mat.select-theme($theme);
+@include mat.sidenav-theme($theme);
+@include mat.snack-bar-theme($theme);
+@include mat.sort-theme($theme);
+@include mat.table-theme($theme);
+@include mat.tabs-theme($theme);
+@include mat.tooltip-theme($theme);
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body.mat-typography {
+  margin: 0;
+  background: t.$canvas;
+  color: t.$ink;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+:focus-visible { outline: 2px solid t.$teal; outline-offset: 3px; }
+.mat-typography .page-heading h1 {
+  color: t.$navy;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -.035em;
+  margin: 0 0 .5rem;
+}
+.page-heading { margin-bottom: 1.25rem; }
+.page-heading p, .muted { color: t.$muted; }
+.page-heading p { margin: 0; }
+.surface {
+  background: white;
+  border: 1px solid t.$border;
+  border-radius: t.$radius;
+  box-shadow: t.$shadow;
+}
+.empty-state {
+  min-height: clamp(11rem, 26vh, 16rem);
+  padding: 2rem 1.25rem;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+}
+.mat-typography .empty-state h2 { margin: .8rem 0 .35rem; font-weight: 600; }
+.empty-state p { max-width: 40rem; }
+.library-data-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem .8rem;
+  min-height: 2rem;
+  padding: .25rem clamp(.75rem, 3vw, 2.25rem);
+  border-bottom: 1px solid t.$border;
+  color: t.$muted;
+  background: white;
+  font-size: .8rem;
+}
+.library-mode { color: t.$teal; font-weight: 600; }
+
+mat-icon.mat-icon:not(.mat-icon-inline) { overflow: hidden; flex-shrink: 0; }
+
+.analytics-table-scroll, .book-table-scroll, .member-table-scroll, .circulation-table-scroll {
+  scrollbar-color: t.$muted t.$canvas;
+}
+
+.feature-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: .7rem;
+  color: t.$teal;
+  background: t.$teal-soft;
+}

@@ -1,0 +1,90 @@
+<div class="inventory-heading">
+  <app-page-heading title="Book Management" description="Maintain title records and manage library inventory."></app-page-heading>
+  <button mat-flat-button color="primary" type="button" (click)="edit(null)"><mat-icon>add</mat-icon> Add book</button>
+</div>
+
+<ng-container *ngIf="browser.view$ | async as view; else loading">
+  <p *ngIf="storageWarning$ | async as warning" class="book-notice" role="status">{{ warning }}</p>
+  <section aria-label="Inventory summary" class="inventory-summary">
+    <div class="surface"><span>Catalogue titles</span><strong>{{ view.total }}</strong></div>
+    <div class="surface"><span>Total copies</span><strong>{{ view.counts.copies }}</strong></div>
+    <div class="surface"><span>Available copies</span><strong>{{ view.counts.available }}</strong></div>
+    <div class="surface"><span>Borrowed or reserved</span><strong>{{ view.counts.allocated }}</strong></div>
+  </section>
+  <section class="surface inventory-panel" aria-labelledby="inventory-title">
+    <div class="book-controls">
+      <div class="inventory-panel-heading">
+        <h2 id="inventory-title">Book inventory</h2>
+        <span *ngIf="view.demo" class="book-demo">Includes demonstration records</span>
+      </div>
+      <app-book-filters #filters [languages]="view.languages" (filtersChange)="browser.filter($event)"></app-book-filters>
+      <p class="inventory-result muted" aria-live="polite">{{ view.length }} of {{ view.total }} titles</p>
+    </div>
+
+    <div *ngIf="view.length; else noResults" class="book-table-scroll" role="region" aria-label="Book inventory table" tabindex="0">
+      <table mat-table [dataSource]="view.page" matSort [matSortActive]="view.sort.key" [matSortDirection]="view.sort.direction"
+        matSortDisableClear (matSortChange)="applySort($event)" class="book-table">
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Title and author</th>
+          <td mat-cell *matCellDef="let book">
+            <div class="inventory-title"><app-book-cover [book]="book" [small]="true"></app-book-cover>
+              <div><strong>{{ book.title }}</strong><span class="muted">{{ book.author }}</span></div>
+            </div>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="isbn">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>ISBN</th>
+          <td mat-cell *matCellDef="let book">{{ book.isbn || '—' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
+          <td mat-cell *matCellDef="let book">{{ categoryName(book.categoryId) }}</td>
+        </ng-container>
+        <ng-container matColumnDef="shelfLocation">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Shelf</th>
+          <td mat-cell *matCellDef="let book">{{ book.shelfLocation }}</td>
+        </ng-container>
+        <ng-container matColumnDef="totalCopies">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Total</th>
+          <td mat-cell *matCellDef="let book">{{ book.totalCopies }}</td>
+        </ng-container>
+        <ng-container matColumnDef="availableCopies">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Available</th>
+          <td mat-cell *matCellDef="let book">{{ book.availableCopies }}</td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+          <td mat-cell *matCellDef="let book"><app-book-status [status]="book.status"></app-book-status></td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let book">
+            <div class="inventory-actions">
+              <button mat-icon-button type="button" matTooltip="View details" [attr.aria-label]="'View ' + book.title"
+                (click)="showDetails(book)"><mat-icon>visibility</mat-icon></button>
+              <button mat-icon-button type="button" matTooltip="Edit book" [attr.aria-label]="'Edit ' + book.title"
+                (click)="edit(book)"><mat-icon>edit</mat-icon></button>
+              <button mat-icon-button type="button" [matTooltip]="book.borrowedCopies || book.reservedCopies ? 'Deletion blocked by allocated copies' : 'Delete book'"
+                [attr.aria-label]="'Delete ' + book.title" (click)="confirmDelete(book)"><mat-icon>delete_outline</mat-icon></button>
+            </div>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+
+    <ng-template #noResults>
+      <div class="empty-state">
+        <span class="feature-icon"><mat-icon>inventory_2</mat-icon></span>
+        <h2>{{ view.total ? 'No matching books' : 'No books in inventory' }}</h2>
+        <button *ngIf="view.total" mat-stroked-button type="button" (click)="filters.clear()">Clear filters</button>
+        <button *ngIf="!view.total" mat-stroked-button type="button" (click)="edit(null)">Add book</button>
+      </div>
+    </ng-template>
+    <mat-paginator *ngIf="view.length" class="book-paginator" aria-label="Inventory pages"
+      [length]="view.length" [pageIndex]="view.pageIndex" [pageSize]="view.pageSize"
+      [pageSizeOptions]="[5, 10, 25]" (page)="browser.paginate($event)" showFirstLastButtons></mat-paginator>
+  </section>
+</ng-container>
+<ng-template #loading><p role="status">Loading the inventory…</p></ng-template>

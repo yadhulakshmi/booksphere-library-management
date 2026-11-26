@@ -1,0 +1,42 @@
+@use './tokens' as t;
+
+.circulation-controls { padding: 1rem 1.2rem .75rem; }
+.circulation-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: .35rem .75rem;
+}
+.circulation-filters .mat-form-field { flex: 1 1 9rem; min-width: 0; font-size: .9rem; }
+.circulation-filters .circulation-search { flex: 2 1 15rem; }
+.circulation-filters .mat-form-field-infix { width: auto; }
+.circulation-filters mat-icon[matPrefix] { margin-right: .35rem; color: t.$muted; vertical-align: middle; }
+.circulation-filters button { margin: .5rem 0; }
+.circulation-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem 1rem; color: t.$muted; font-size: .85rem; }
+.circulation-table-scroll { overflow-x: auto; }
+.circulation-table-scroll:focus-visible { outline-offset: -2px; }
+.circulation-table { width: 100%; min-width: 63rem; }
+.circulation-table .mat-header-cell, .circulation-table .mat-cell { padding: .4rem .55rem; }
+.circulation-table .mat-header-cell { background: t.$canvas; color: t.$ink; font-weight: 700; }
+.circulation-table .mat-column-id, .circulation-table .mat-column-actions { white-space: nowrap; }
+.circulation-table .mat-row:hover { background: #f8fafc; }
+.circulation-badge { display: inline-block; padding: .12rem .55rem; border-radius: 1rem; background: #ebeff4; color: #41556a; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.circulation-badge[data-status='Active'], .circulation-badge[data-status='Ready for collection'] { background: t.$teal-soft; color: t.$teal; }
+.circulation-badge[data-status='Due today'], .circulation-badge[data-status='Waiting'] { background: #fff1d6; color: #65450a; }
+.circulation-badge[data-status='Overdue'] { background: #fbe9ea; color: #803336; }
+.circulation-demo { display: block; color: t.$muted; }
+.circulation-field { width: 100%; }
+.circulation-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+.circulation-details dt { font-weight: 700; }
+.circulation-details dd { margin: 0; overflow-wrap: anywhere; }
+.circulation-preview { background: t.$canvas; border-radius: t.$small-radius; padding: .6rem .8rem; }
+.circulation-preview p { margin: .25rem 0; }
+.circulation-error { color: #803336; }
+.member-transaction-list { padding-left: 1.1rem; margin: .4rem 0 0; }
+.member-transaction-list li + li { margin-top: .35rem; }
+
+@media (max-width: 540px) {
+  .circulation-filters .circulation-search { flex-basis: 100%; }
+  .circulation-panel .mat-paginator-container { padding: 0 .2rem; }
+  .circulation-panel .mat-paginator-range-label { margin: 0 .3rem; }
+}

@@ -1,0 +1,40 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <mat-dialog-content>
+    <mat-form-field appearance="outline" class="circulation-field">
+      <mat-label>Member</mat-label>
+      <input matInput formControlName="member" [matAutocomplete]="memberList" [readonly]="data.mode === 'collect'" required>
+      <mat-autocomplete #memberList="matAutocomplete" [displayWith]="memberLabel">
+        <mat-option *ngFor="let member of memberOptions$ | async" [value]="member">
+          {{ memberLabel(member) }} · {{ member.status }}
+        </mat-option>
+      </mat-autocomplete>
+      <mat-error>Choose a member from the results.</mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="circulation-field">
+      <mat-label>Book</mat-label>
+      <input matInput formControlName="book" [matAutocomplete]="bookList" [readonly]="data.mode === 'collect'" required>
+      <mat-autocomplete #bookList="matAutocomplete" [displayWith]="bookLabel">
+        <mat-option *ngFor="let book of bookOptions$ | async" [value]="book">{{ bookLabel(book) }}</mat-option>
+      </mat-autocomplete>
+      <mat-error>Choose a book from the results.</mat-error>
+    </mat-form-field>
+    <mat-form-field *ngIf="showDate" appearance="outline" class="circulation-field">
+      <mat-label>Borrow date</mat-label>
+      <input matInput type="date" formControlName="day" [max]="today" required>
+      <mat-error>Enter a valid date on or before today.</mat-error>
+    </mat-form-field>
+    <div *ngIf="selection$ | async as selected" class="circulation-preview" aria-live="polite">
+      <p *ngIf="selected.member">Membership {{ selected.member.status | lowercase }} ·
+        {{ selected.count }} of {{ selected.limit }} active loans</p>
+      <p *ngIf="showDate && selected.restricted">Borrowing is restricted by outstanding assessed fines.</p>
+      <p *ngIf="selected.book">{{ selected.book.availableCopies }} of {{ selected.book.totalCopies }} copies available
+        <span *ngIf="selected.reserved"> · A copy is ready for this member</span></p>
+      <p *ngIf="showDate && selected.due">Due date <strong>{{ selected.due | date:'mediumDate' }}</strong></p>
+    </div>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button" [disabled]="saving">Cancel</button>
+    <button mat-flat-button type="submit" color="primary" [disabled]="saving">{{ saving ? 'Saving…' : title }}</button>
+  </mat-dialog-actions>
+</form>

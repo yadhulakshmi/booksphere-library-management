@@ -1,0 +1,31 @@
+<div class="book-filters" [formGroup]="form" role="search" aria-label="Filter books">
+  <mat-form-field appearance="outline" class="book-search-field">
+    <mat-label>Search books</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput formControlName="search" placeholder="Title, author, ISBN, or publisher">
+  </mat-form-field>
+  <mat-form-field appearance="outline">
+    <mat-label>Category</mat-label>
+    <mat-select formControlName="category">
+      <mat-option value="">All categories</mat-option>
+      <mat-option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="outline">
+    <mat-label>Language</mat-label>
+    <mat-select formControlName="language">
+      <mat-option value="">All languages</mat-option>
+      <mat-option *ngFor="let language of languages" [value]="language">{{ language }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field appearance="outline">
+    <mat-label>Availability</mat-label>
+    <mat-select formControlName="status">
+      <mat-option value="">Any status</mat-option>
+      <mat-option value="Available">Available</mat-option>
+      <mat-option value="Unavailable">Unavailable</mat-option>
+      <mat-option value="Out of stock">Out of stock</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <button mat-stroked-button type="button" (click)="clear()">Clear filters</button>
+</div>

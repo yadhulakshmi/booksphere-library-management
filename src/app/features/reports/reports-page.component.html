@@ -1,0 +1,117 @@
+<ng-container *ngIf="view$ | async as view; else loading">
+  <div class="report-screen">
+    <app-page-heading title="Reports and Analytics" description="Filter, export, and print reports based on the library’s recorded data."></app-page-heading>
+    <p *ngFor="let warning of view.source.warnings" class="book-notice" role="status">{{ warning }}</p>
+    <section class="surface reports-controls" aria-label="Report options">
+      <div class="reports-filter-grid" [formGroup]="filters">
+        <mat-form-field appearance="outline">
+          <mat-label>Report type</mat-label>
+          <mat-select id="report-type" [value]="type" (selectionChange)="select($event.value)">
+            <mat-option *ngFor="let report of reports" [value]="report.type">{{ report.title }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Search report</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput formControlName="search" placeholder="Search this report">
+        </mat-form-field>
+        <mat-form-field appearance="outline" *ngIf="view.report.type === 'circulation'">
+          <mat-label>Date basis</mat-label>
+          <mat-select formControlName="dateBasis">
+            <mat-option value="issue">Issue date</mat-option><mat-option value="return">Return date</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <ng-container *ngIf="view.report.dateLabel">
+          <mat-form-field appearance="outline"><mat-label>From {{ view.report.dateLabel | lowercase }}</mat-label>
+            <input matInput type="date" formControlName="start">
+          </mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Through {{ view.report.dateLabel | lowercase }}</mat-label>
+            <input matInput type="date" formControlName="end">
+          </mat-form-field>
+        </ng-container>
+        <mat-form-field appearance="outline" *ngFor="let facet of view.options; trackBy: facetKey">
+          <mat-label>{{ facet.label }}</mat-label>
+          <mat-select [formControlName]="facet.key">
+            <mat-option value="">All</mat-option>
+            <mat-option *ngFor="let option of facet.values; trackBy: optionKey" [value]="option.value">{{ option.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <p *ngIf="view.invalidRange" class="circulation-error" role="alert">The end of the date range must be on or after the start.</p>
+      <div class="reports-actions">
+        <button mat-button type="button" (click)="clear()">Clear filters</button>
+        <button mat-stroked-button type="button" [disabled]="!!view.outputUnavailable"
+          matTooltip="Print all matching records" (click)="print()"><mat-icon>print</mat-icon> Print report</button>
+        <button mat-flat-button color="primary" type="button" [disabled]="!!view.outputUnavailable"
+          matTooltip="Download all matching records" (click)="exportCsv(view)"><mat-icon>download</mat-icon> Export CSV</button>
+      </div>
+      <p *ngIf="view.outputUnavailable && !view.invalidRange" class="muted reports-output-note" role="status">{{ view.outputUnavailable }}</p>
+      <p *ngIf="outputError" class="circulation-error" role="alert">{{ outputError }}</p>
+      <p *ngIf="lastDownload as download" class="reports-output-note">
+        <a [href]="download.safeHref" [attr.download]="download.filename">Download last CSV again</a>
+      </p>
+      <p class="muted reports-scope">{{ view.report.scope }}</p>
+    </section>
+    <div class="inventory-summary reports-summary" aria-label="Filtered report totals" *ngIf="view.ready">
+      <div *ngFor="let metric of view.summary" class="surface">
+        <span>{{ metric.label }}</span><strong>{{ metric.value | reportValue:(metric.money ? 'money' : 'count') }}</strong>
+      </div>
+    </div>
+    <section class="surface reports-results" aria-label="Report results">
+      <div class="reports-results-heading">
+        <h2>{{ view.report.title }}</h2>
+        <p *ngIf="view.ready" class="muted" aria-live="polite">{{ view.rows.length }} matching records</p>
+      </div>
+      <div *ngIf="view.ready && view.rows.length; else empty" class="analytics-table-scroll report-table-scroll"
+        tabindex="0" role="region" aria-label="Report records">
+        <table mat-table [dataSource]="view.page" matSort matSortDisableClear [matSortActive]="view.query.sort"
+          [matSortDirection]="view.query.direction" (matSortChange)="sort($event)" class="report-data-table">
+          <ng-container *ngFor="let column of view.report.columns" [matColumnDef]="column.key">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ column.label }}</th>
+            <td mat-cell *matCellDef="let row">{{ row.values[column.key] | reportValue:column.format }}
+              <small *ngIf="row.demo && column === view.report.columns[0]" class="circulation-demo">Demo</small>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="view.keys"></tr>
+          <tr mat-row *matRowDef="let row; columns: view.keys"></tr>
+        </table>
+      </div>
+      <ng-template #empty>
+        <div class="empty-state"><span class="feature-icon"><mat-icon>assessment</mat-icon></span>
+          <h2>{{ view.ready ? 'No matching records' : 'Report data is unavailable' }}</h2>
+          <p *ngIf="view.ready">Try different filters or a wider date range.</p>
+        </div>
+      </ng-template>
+      <mat-paginator *ngIf="view.ready && view.rows.length" aria-label="Report pages" [length]="view.rows.length"
+        [pageIndex]="view.index" [pageSize]="view.query.size" [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="paginate($event)" showFirstLastButtons></mat-paginator>
+    </section>
+  </div>
+
+  <article #printReport class="report-print" *ngIf="printRequested && !view.outputUnavailable">
+    <header>
+      <p>{{ view.source.libraryName }}</p>
+      <h1>{{ view.report.title }} report</h1>
+      <p>Generated {{ generatedAt | date:'medium' }}</p>
+      <p>{{ view.report.scope }}</p>
+    </header>
+    <h2>Selected filters</h2>
+    <ul *ngIf="view.filters.length; else unfiltered"><li *ngFor="let filter of view.filters">
+      {{ filter.label }} <strong>{{ filter.value }}</strong>
+    </li></ul>
+    <ng-template #unfiltered><p>All records</p></ng-template>
+    <h2>Summary</h2>
+    <ul><li *ngFor="let metric of view.summary">{{ metric.label }}
+      <strong>{{ metric.value | reportValue:(metric.money ? 'money' : 'count') }}</strong></li></ul>
+    <table *ngIf="view.rows.length">
+      <thead><tr><th scope="col" *ngFor="let column of view.report.columns">{{ column.label }}</th></tr></thead>
+      <tbody><tr *ngFor="let row of view.rows">
+        <td *ngFor="let column of view.report.columns">{{ row.values[column.key] | reportValue:column.format }}
+          <small *ngIf="row.demo && column === view.report.columns[0]"> · Demo</small>
+        </td>
+      </tr></tbody>
+    </table>
+    <p *ngIf="!view.rows.length">No matching records.</p>
+  </article>
+</ng-container>
+<ng-template #loading><p role="status">Loading library reports…</p></ng-template>

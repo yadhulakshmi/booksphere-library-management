@@ -1,0 +1,145 @@
+<app-page-heading title="Overdue and Fines" description="Track overdue loans, assess charges on return, and record fine payments."></app-page-heading>
+<p *ngIf="warning$ | async as warning" class="book-notice" role="status">{{ warning }}</p>
+<ng-container *ngIf="view$ | async as view">
+  <section class="inventory-summary" aria-label="Overdue and fine summary">
+    <div class="surface"><span>Overdue loans</span><strong>{{ view.overdue }}</strong></div>
+    <div class="surface"><span>Members with overdue books</span><strong>{{ view.members }}</strong></div>
+    <div class="surface"><span>Estimated accruing fines</span><strong>{{ view.estimated / 100 | currency:'INR' }}</strong></div>
+    <div class="surface"><span>Outstanding assessed fines</span><strong>{{ view.assessed / 100 | currency:'INR' }}</strong></div>
+  </section>
+  <section class="surface circulation-panel" aria-label="Overdue and fine records">
+    <mat-tab-group [selectedIndex]="view.query.tab" (selectedIndexChange)="tab($event)">
+      <mat-tab label="Overdue loans"><ng-template matTabContent><ng-container *ngTemplateOutlet="directory"></ng-container></ng-template></mat-tab>
+      <mat-tab label="Fine management"><ng-template matTabContent><ng-container *ngTemplateOutlet="directory"></ng-container></ng-template></mat-tab>
+      <mat-tab label="Payment history"><ng-template matTabContent><ng-container *ngTemplateOutlet="directory"></ng-container></ng-template></mat-tab>
+    </mat-tab-group>
+    <ng-template #directory>
+      <div class="circulation-controls">
+        <div class="circulation-filters" [formGroup]="filters" role="search" aria-label="Filter overdue and fine records">
+          <mat-form-field appearance="outline" class="circulation-search"><mat-label>Search records</mat-label>
+            <mat-icon matPrefix>search</mat-icon><input matInput formControlName="search" placeholder="Member, book, or record ID">
+          </mat-form-field>
+          <mat-form-field *ngIf="view.query.tab === 0" appearance="outline"><mat-label>Overdue duration</mat-label>
+            <mat-select formControlName="duration"><mat-option value="">Any duration</mat-option>
+              <mat-option value="7">At least 7 days</mat-option><mat-option value="14">At least 14 days</mat-option>
+              <mat-option value="30">At least 30 days</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field *ngIf="view.query.tab !== 0" appearance="outline">
+            <mat-label>{{ view.query.tab === 1 ? 'Fine status' : 'Payment method' }}</mat-label>
+            <mat-select formControlName="status"><mat-option value="">All</mat-option>
+              <mat-option *ngFor="let option of view.query.tab === 1 ? fineStatuses : methods" [value]="option">{{ option }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ view.query.tab === 0 ? 'Due' : view.query.tab === 1 ? 'Returned' : 'Paid' }} from</mat-label>
+            <input matInput type="date" formControlName="start">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>{{ view.query.tab === 0 ? 'Due' : view.query.tab === 1 ? 'Returned' : 'Paid' }} through</mat-label>
+            <input matInput type="date" formControlName="end">
+          </mat-form-field>
+          <button mat-stroked-button type="button" (click)="clear()">Clear filters</button>
+        </div>
+        <p *ngIf="filters.value.start && filters.value.end && filters.value.start > filters.value.end" role="alert" class="circulation-error">
+          The end of the date range must be on or after the start.
+        </p>
+        <div class="circulation-meta" aria-live="polite">
+          <span>{{ view.length }} of {{ view.total }} records</span>
+          <span *ngIf="view.query.tab === 0">Current estimates are finalized when a book is returned.</span>
+          <span *ngIf="view.query.tab === 2">Manual demonstration payments</span>
+          <span *ngIf="view.query.tab === 2">Filtered payment total <strong>{{ view.filteredPayments / 100 | currency:'INR' }}</strong></span>
+        </div>
+      </div>
+      <div *ngIf="view.length; else empty" class="circulation-table-scroll" role="region" aria-label="Overdue and fine records" tabindex="0">
+        <table mat-table [dataSource]="view.rows" matSort [matSortActive]="view.query.sort" [matSortDirection]="view.query.direction"
+          matSortDisableClear (matSortChange)="sort($event)" class="circulation-table">
+          <ng-container *ngFor="let column of view.columns" [matColumnDef]="column.key">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ column.label }}</th>
+            <td mat-cell *matCellDef="let row" [ngSwitch]="column.format">
+              <span *ngSwitchCase="'status'" class="circulation-badge" [attr.data-status]="row.status">{{ row.status }}</span>
+              <span *ngSwitchCase="'date'">{{ row.cells[column.key] | date:'mediumDate' }}</span>
+              <span *ngSwitchCase="'money'">{{ row.cells[column.key] / 100 | currency:'INR' }}</span>
+              <span *ngSwitchDefault>{{ row.cells[column.key] === '' ? '—' : row.cells[column.key] }}</span>
+              <small *ngIf="column.key === 'id' && row.demo" class="circulation-demo">Demo</small>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let row">
+              <ng-container *ngIf="loan(row) as item">
+                <button mat-icon-button type="button" matTooltip="View loan" [attr.aria-label]="'View loan ' + row.id"
+                  (click)="details(loanDetails, item)"><mat-icon>visibility</mat-icon></button>
+                <button mat-icon-button type="button" matTooltip="View member" [attr.aria-label]="'View member for ' + row.id"
+                  (click)="profile(item)"><mat-icon>person_outline</mat-icon></button>
+                <button mat-icon-button type="button" matTooltip="Return book" [attr.aria-label]="'Return ' + row.id"
+                  (click)="returnBook(item)"><mat-icon>assignment_return</mat-icon></button>
+              </ng-container>
+              <ng-container *ngIf="fine(row) as item">
+                <button mat-icon-button type="button" matTooltip="View fine" [attr.aria-label]="'View fine ' + row.id"
+                  (click)="details(fineDetails, item)"><mat-icon>visibility</mat-icon></button>
+                <button *ngIf="item.balanceMinor" mat-icon-button type="button" matTooltip="Record payment"
+                  [attr.aria-label]="'Pay ' + row.id" (click)="pay(item)"><mat-icon>payments</mat-icon></button>
+                <button mat-icon-button type="button" matTooltip="Payment history" [attr.aria-label]="'Payment history for ' + row.id"
+                  (click)="history(item)"><mat-icon>history</mat-icon></button>
+              </ng-container>
+              <button *ngIf="payment(row) as item" mat-icon-button type="button" matTooltip="View payment"
+                [attr.aria-label]="'View payment ' + row.id" (click)="details(paymentDetails, item)"><mat-icon>visibility</mat-icon></button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="view.keys"></tr>
+          <tr mat-row *matRowDef="let row; columns: view.keys"></tr>
+        </table>
+      </div>
+      <ng-template #empty>
+        <div class="empty-state"><span class="feature-icon"><mat-icon>search_off</mat-icon></span>
+          <h2>{{ view.total ? 'No matching records' : 'No records to show' }}</h2>
+          <button *ngIf="view.total" mat-stroked-button type="button" (click)="clear()">Clear filters</button>
+        </div>
+      </ng-template>
+      <mat-paginator *ngIf="view.length" aria-label="Overdue and fine pages" [length]="view.length" [pageIndex]="view.index"
+        [pageSize]="view.query.size" [pageSizeOptions]="[5, 10, 25]" (page)="paginate($event)" showFirstLastButtons></mat-paginator>
+    </ng-template>
+  </section>
+</ng-container>
+<ng-template #loanDetails let-item>
+  <h2 mat-dialog-title>Loan {{ item.id }}</h2>
+  <mat-dialog-content><p><strong>{{ item.bookTitle }}</strong><br>{{ item.memberName }} · {{ item.membershipId }}</p>
+    <dl class="circulation-details">
+      <div><dt>Borrowed</dt><dd>{{ item.checkedOutAt | date:'mediumDate' }}</dd></div>
+      <div><dt>Due</dt><dd>{{ item.dueAt | date:'mediumDate' }}</dd></div>
+      <div><dt>Renewals</dt><dd>{{ item.renewals }}</dd></div>
+      <div><dt>Daily fine rate</dt><dd>{{ item.terms.dailyFineMinor / 100 | currency:'INR' }}</dd></div>
+    </dl>
+  </mat-dialog-content><mat-dialog-actions align="end"><button mat-button mat-dialog-close type="button">Close</button></mat-dialog-actions>
+</ng-template>
+<ng-template #fineDetails let-item>
+  <h2 mat-dialog-title>Fine {{ item.id }}</h2>
+  <mat-dialog-content><p><strong>{{ item.bookTitle }}</strong><br>{{ item.memberName }} · {{ item.membershipId }} · {{ item.loanId }}</p>
+    <dl class="circulation-details">
+      <div><dt>Original due date</dt><dd>{{ item.originalDueAt | date:'mediumDate' }}</dd></div>
+      <div><dt>Due date at return</dt><dd>{{ item.dueAt | date:'mediumDate' }}</dd></div>
+      <div><dt>Returned</dt><dd>{{ item.returnedAt | date:'mediumDate' }}</dd></div>
+      <div><dt>Overdue days</dt><dd>{{ item.overdueDays }}</dd></div>
+      <div><dt>Applied daily rate</dt><dd>{{ item.policy.dailyFineMinor / 100 | currency:'INR' }}</dd></div>
+      <div><dt>Applied grace period</dt><dd>{{ item.policy.graceDays }} days</dd></div>
+      <div><dt>Applied cap</dt><dd>{{ item.policy.maxFineMinor / 100 | currency:'INR' }}</dd></div>
+      <div><dt>Assessed</dt><dd>{{ item.assessedMinor / 100 | currency:'INR' }}</dd></div>
+      <div><dt>Paid</dt><dd>{{ item.paidMinor / 100 | currency:'INR' }}</dd></div>
+      <div><dt>Balance</dt><dd>{{ item.balanceMinor / 100 | currency:'INR' }}</dd></div>
+    </dl>
+  </mat-dialog-content><mat-dialog-actions align="end"><button mat-button mat-dialog-close type="button">Close</button></mat-dialog-actions>
+</ng-template>
+<ng-template #paymentDetails let-item>
+  <h2 mat-dialog-title>Payment {{ item.id }}</h2>
+  <mat-dialog-content><p><strong>{{ item.memberName }}</strong> · {{ item.membershipId }} · {{ item.fineId }}</p>
+    <dl class="circulation-details">
+      <div><dt>Amount</dt><dd>{{ item.amountMinor / 100 | currency:'INR' }}</dd></div>
+      <div><dt>Method</dt><dd>{{ item.method }}</dd></div>
+      <div><dt>Payment date</dt><dd>{{ item.paidOn | date:'mediumDate' }}</dd></div>
+      <div><dt>Recorded at</dt><dd>{{ item.recordedAt | date:'medium' }}</dd></div>
+      <div><dt>Reference</dt><dd>{{ item.reference || '—' }}</dd></div>
+      <div><dt>Notes</dt><dd>{{ item.notes || '—' }}</dd></div>
+    </dl>
+  </mat-dialog-content><mat-dialog-actions align="end"><button mat-button mat-dialog-close type="button">Close</button></mat-dialog-actions>
+</ng-template>

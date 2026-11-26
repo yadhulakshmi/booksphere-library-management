@@ -1,0 +1,21 @@
+@use './tokens' as t;
+
+.settings-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.settings-card { padding: 1.1rem 1.2rem .65rem; }
+.mat-typography .settings-card h2 { color: t.$navy; font-weight: 700; margin-bottom: .45rem; }
+.settings-card p { margin-bottom: .8rem; }
+.settings-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .2rem .8rem; }
+.settings-fields .mat-form-field { min-width: 0; font-size: .9rem; }
+.settings-fields .mat-form-field-infix { width: auto; }
+.settings-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin-top: 1rem; padding: .85rem 1rem; }
+.mat-typography .settings-actions p { margin: 0 auto 0 0; color: #65450a; }
+.circulation-badge[data-status='Paid'] { color: t.$teal; background: t.$teal-soft; }
+.circulation-badge[data-status='Partially Paid'] { color: #65450a; background: #fff1d6; }
+.circulation-badge[data-status='Outstanding'] { color: #803336; background: #fbe9ea; }
+
+@media (max-width: 1040px) { .settings-sections { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 540px) {
+  .settings-fields { grid-template-columns: minmax(0, 1fr); }
+  .settings-actions p { flex-basis: 100%; order: -1; }
+  .settings-actions p:empty { display: none; }
+}

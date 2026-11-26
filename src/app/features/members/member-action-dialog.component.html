@@ -1,0 +1,30 @@
+<h2 mat-dialog-title>{{ titles[data.action] }}</h2>
+<form [formGroup]="form" (ngSubmit)="confirm()" novalidate>
+  <mat-dialog-content>
+    <p><strong>{{ data.member.firstName }} {{ data.member.lastName }}</strong> · {{ data.member.membershipId }}</p>
+    <ng-container *ngIf="data.action === 'renew'">
+      <p>Current expiry: {{ data.member.expiryDate | date:'mediumDate' }}.</p>
+      <p *ngIf="data.member.state !== 'Active'">Membership status will remain {{ data.member.state | lowercase }} after renewal.</p>
+      <mat-form-field appearance="outline" class="member-form-full">
+        <mat-label>New expiry date</mat-label><input matInput type="date" formControlName="expiryDate" required>
+        <mat-error>Choose a date after today and the current expiry.</mat-error>
+      </mat-form-field>
+    </ng-container>
+    <ng-container *ngIf="data.action === 'status'">
+      <p>Current status: {{ data.member.status }}. Confirm to apply the selected status.</p>
+      <mat-form-field appearance="outline" class="member-form-full">
+        <mat-label>New status</mat-label>
+        <mat-select formControlName="state" required>
+          <mat-option *ngFor="let state of states" [value]="state">{{ state }}</mat-option>
+        </mat-select>
+        <mat-error>Choose a membership status.</mat-error>
+      </mat-form-field>
+    </ng-container>
+    <p *ngIf="data.action === 'delete'">This permanently removes the member profile. The membership ID stays retired.</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button" cdkFocusInitial [disabled]="saving">Cancel</button>
+    <button mat-flat-button [color]="data.action === 'delete' ? 'warn' : 'primary'" type="submit"
+      [disabled]="saving">{{ labels[data.action] }}</button>
+  </mat-dialog-actions>
+</form>

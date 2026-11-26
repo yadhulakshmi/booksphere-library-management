@@ -1,0 +1,110 @@
+<div class="inventory-heading">
+  <app-page-heading title="Members" description="Manage profiles, membership status, and renewals."></app-page-heading>
+  <button mat-flat-button color="primary" type="button" (click)="edit(null)"><mat-icon>person_add</mat-icon> Add member</button>
+</div>
+<p *ngIf="warning$ | async as warning" class="member-notice" role="status">{{ warning }}</p>
+<ng-container *ngIf="view$ | async as view; else loading">
+  <section aria-label="Membership summary" class="inventory-summary">
+    <div class="surface"><span>Total members</span><strong>{{ view.total }}</strong></div>
+    <div class="surface"><span>Active members</span><strong>{{ view.counts.Active }}</strong></div>
+    <div class="surface"><span>Expired members</span><strong>{{ view.counts.Expired }}</strong></div>
+    <div class="surface"><span>Suspended members</span><strong>{{ view.counts.Suspended }}</strong></div>
+  </section>
+
+  <section class="surface member-directory" aria-labelledby="directory-heading">
+    <div class="member-controls">
+      <div class="inventory-panel-heading">
+        <h2 id="directory-heading">Member directory</h2>
+        <span *ngIf="view.demo" class="muted member-note">Includes fictional demonstration members</span>
+      </div>
+      <div class="member-filters" [formGroup]="filters" role="search" aria-label="Filter members">
+        <mat-form-field appearance="outline">
+          <mat-label>Search members</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput formControlName="search" placeholder="Name, membership ID, email, or phone">
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Membership type</mat-label>
+          <mat-select formControlName="type">
+            <mat-option value="">All types</mat-option>
+            <mat-option *ngFor="let type of types" [value]="type">{{ type }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="">All statuses</mat-option>
+            <mat-option *ngFor="let status of statuses" [value]="status">{{ status }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <button mat-stroked-button type="button" (click)="clear()">Clear filters</button>
+      </div>
+      <p class="inventory-result muted" aria-live="polite">{{ view.length }} of {{ view.total }} members</p>
+    </div>
+
+    <div class="member-table-scroll" *ngIf="view.length; else empty" role="region" aria-label="Member records" tabindex="0">
+      <table mat-table [dataSource]="view.rows" matSort [matSortActive]="view.query.column"
+        [matSortDirection]="view.query.direction" matSortDisableClear (matSortChange)="sort($event)" class="member-table">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+          <td mat-cell *matCellDef="let member">
+            <div class="member-identity"><span class="member-avatar" aria-hidden="true">{{ member.initials }}</span>
+              <button class="member-name" type="button" (click)="profile(member)">{{ member.firstName }} {{ member.lastName }}</button>
+            </div>
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="membershipId">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Membership ID</th>
+          <td mat-cell *matCellDef="let member">{{ member.membershipId }}</td>
+        </ng-container>
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Contact</th>
+          <td mat-cell *matCellDef="let member">{{ member.email }}<br><span class="muted member-note">{{ member.phone }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="membershipType">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+          <td mat-cell *matCellDef="let member">{{ member.membershipType }}</td>
+        </ng-container>
+        <ng-container matColumnDef="registrationDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Registered</th>
+          <td mat-cell *matCellDef="let member">{{ member.registrationDate | date:'mediumDate' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="expiryDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Expires</th>
+          <td mat-cell *matCellDef="let member">{{ member.expiryDate | date:'mediumDate' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+          <td mat-cell *matCellDef="let member"><span class="member-status" [attr.data-status]="member.status">{{ member.status }}</span></td>
+        </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let member">
+            <button mat-icon-button type="button" [matMenuTriggerFor]="actions" matTooltip="Member actions"
+              [attr.aria-label]="'Actions for ' + member.firstName + ' ' + member.lastName"><mat-icon>more_horiz</mat-icon></button>
+            <mat-menu #actions="matMenu">
+              <button mat-menu-item (click)="profile(member)"><mat-icon>person_outline</mat-icon>View profile</button>
+              <button mat-menu-item (click)="edit(member)"><mat-icon>edit</mat-icon>Edit member</button>
+              <button mat-menu-item (click)="action(member, 'renew')"><mat-icon>event_repeat</mat-icon>Renew membership</button>
+              <button mat-menu-item (click)="action(member, 'status')"><mat-icon>manage_accounts</mat-icon>Change status</button>
+              <button mat-menu-item (click)="action(member, 'delete')"><mat-icon>delete_outline</mat-icon>Delete member</button>
+            </mat-menu>
+          </td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+    <ng-template #empty>
+      <div class="empty-state">
+        <span class="feature-icon"><mat-icon>person_search</mat-icon></span>
+        <h2>{{ view.total ? 'No matching members' : 'No members in the directory' }}</h2>
+        <button *ngIf="view.total" mat-stroked-button type="button" (click)="clear()">Clear filters</button>
+      </div>
+    </ng-template>
+    <mat-paginator *ngIf="view.length" aria-label="Member directory pages" [length]="view.length"
+      [pageIndex]="view.pageIndex" [pageSize]="view.query.size" [pageSizeOptions]="[5, 10, 25]"
+      (page)="paginate($event)" showFirstLastButtons></mat-paginator>
+  </section>
+</ng-container>
+<ng-template #loading><p role="status">Loading the member directory…</p></ng-template>

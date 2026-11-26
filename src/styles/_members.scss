@@ -1,0 +1,94 @@
+@use './tokens' as t;
+
+.member-controls { padding: 1rem 1.2rem .85rem; }
+.member-note { font-size: .85rem; }
+.member-notice {
+  background: #fff4df;
+  color: #634515;
+  border: 1px solid #e7d3a7;
+  padding: .8rem 1rem;
+  border-radius: t.$small-radius;
+}
+.member-filters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 2fr) repeat(2, minmax(8rem, 1fr)) auto;
+  gap: .75rem;
+  align-items: start;
+}
+.member-filters .mat-form-field { min-width: 0; font-size: .9rem; }
+.member-filters .mat-form-field-infix { width: auto; }
+.member-filters button { margin: .45rem 0 .65rem; }
+.member-filters mat-icon[matPrefix] { margin-right: .35rem; color: t.$muted; vertical-align: middle; }
+.member-table-scroll { overflow-x: auto; }
+.member-table-scroll:focus-visible { outline-offset: -2px; }
+.member-table { min-width: 56rem; width: 100%; }
+.member-table .mat-cell, .member-table .mat-header-cell { padding: .45rem .6rem; }
+.member-table .mat-header-cell { color: t.$ink; background: t.$canvas; font-weight: 700; }
+.member-table .mat-row:hover { background: #f8fafc; }
+.member-directory .mat-paginator { border-radius: 0 0 t.$radius t.$radius; }
+.member-identity, .member-profile-header { display: flex; gap: .65rem; align-items: center; }
+.member-name {
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: .2rem;
+  font: inherit;
+  font-weight: 700;
+  color: t.$navy;
+  cursor: pointer;
+}
+.member-name:hover { text-decoration: underline; }
+.member-avatar {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 50%;
+  background: t.$teal-soft;
+  color: t.$teal;
+  font-weight: 700;
+  font-size: .85rem;
+}
+.member-status {
+  display: inline-block;
+  white-space: nowrap;
+  border-radius: 1rem;
+  padding: .125rem .55rem;
+  font-weight: 600;
+  font-size: .8rem;
+  background: #ebeff4;
+  color: #41556a;
+}
+.member-status[data-status='Active'] { color: t.$teal; background: t.$teal-soft; }
+.member-status[data-status='Expired'] { color: #65450a; background: #fff1d6; }
+.member-status[data-status='Suspended'] { color: #803336; background: #fbe9ea; }
+.member-profile-header .member-avatar { width: 3.5rem; height: 3.5rem; font-size: 1.15rem; }
+.mat-typography .member-profile-header h3 { font-size: 1.2rem; font-weight: 700; margin: 0 0 .2rem; }
+.member-profile-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.member-profile-grid, .member-circulation-grid, .member-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .6rem 1rem;
+}
+.member-profile-grid > div { padding: .5rem 0; border-bottom: 1px solid t.$border; overflow-wrap: anywhere; }
+.member-profile-grid dt { font-weight: 700; }
+.member-profile-grid dd { color: t.$muted; margin: .1rem 0 0; white-space: pre-line; }
+.member-circulation-grid section { border: 1px solid t.$border; border-radius: t.$small-radius; padding: .65rem; }
+.mat-typography .member-circulation-grid h3 { font-weight: 700; margin: 0 0 .2rem; }
+.mat-typography .member-circulation-grid p { margin: 0; }
+.member-form-grid { padding-top: .3rem; }
+.member-form-wide { grid-column: 1 / -1; }
+.member-form-full { width: 100%; }
+.mat-typography .member-field-error { color: #ad2424; margin: -.9rem 0 .8rem; font-size: .8rem; }
+
+@media (max-width: 1060px) {
+  .member-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 540px) {
+  .member-filters > :first-child { grid-column: 1 / -1; }
+  .member-form-grid, .member-circulation-grid { grid-template-columns: minmax(0, 1fr); }
+  .member-directory .mat-paginator-container { padding: 0 .2rem; }
+  .member-directory .mat-paginator-range-label { margin: 0 .3rem; }
+  app-member-profile-dialog .mat-dialog-actions { flex-wrap: wrap; gap: .4rem; }
+}

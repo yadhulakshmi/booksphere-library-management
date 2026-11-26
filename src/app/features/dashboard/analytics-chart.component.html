@@ -1,0 +1,21 @@
+<section class="surface analytics-chart">
+  <h2>{{ data.title }}</h2>
+  <p class="muted">{{ data.description }}</p>
+  <div class="analytics-canvas" [hidden]="!hasData">
+    <canvas #canvas role="img" [attr.aria-label]="data.title + '. A data table follows.'"></canvas>
+  </div>
+  <p *ngIf="!hasData" class="analytics-empty">No recorded values for this view.</p>
+  <details *ngIf="hasData" class="analytics-chart-data">
+    <summary>View chart data</summary>
+    <div class="analytics-table-scroll" tabindex="0" role="region" aria-label="Chart data">
+      <table>
+        <caption class="analytics-visually-hidden">{{ data.title }}</caption>
+        <thead><tr><th scope="col">Date or group</th><th scope="col" *ngFor="let item of data.series">{{ item.label }}</th></tr></thead>
+        <tbody><tr *ngFor="let label of data.labels; index as index">
+          <th scope="row">{{ label }}</th>
+          <td *ngFor="let item of data.series">{{ data.currency ? (item.values[index] / 100 | currency:'INR') : (item.values[index] | number) }}</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </details>
+</section>

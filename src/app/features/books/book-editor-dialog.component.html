@@ -1,0 +1,56 @@
+<h2 mat-dialog-title>{{ book ? 'Edit book' : 'Add book' }}</h2>
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <mat-dialog-content>
+    <div class="book-editor-grid">
+      <mat-form-field *ngFor="let field of textFields" appearance="outline">
+        <mat-label>{{ field.label }}</mat-label>
+        <input matInput [formControlName]="field.key" required>
+        <mat-error>{{ field.label }} is required.</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Category</mat-label>
+        <mat-select formControlName="categoryId" required>
+          <mat-option *ngFor="let category of categories" [value]="category.id">{{ category.name }}</mat-option>
+        </mat-select>
+        <mat-error>Select a category.</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>ISBN (optional)</mat-label>
+        <input matInput formControlName="isbn">
+        <mat-error *ngIf="form.get('isbn')?.hasError('checksum')">Enter a valid ISBN-10 or ISBN-13.</mat-error>
+        <mat-error *ngIf="form.get('isbn')?.hasError('duplicate')">This ISBN is already in the inventory.</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Publication year</mat-label>
+        <input matInput type="number" formControlName="publicationYear" step="1" required>
+        <mat-error>Enter a whole year from 1 to {{ maxYear }}.</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Total copies</mat-label>
+        <input matInput type="number" formControlName="totalCopies" step="1" required>
+        <mat-error *ngIf="form.get('totalCopies')?.hasError('quantity') || form.get('totalCopies')?.hasError('required')">
+          Enter a non-negative whole number.
+        </mat-error>
+        <mat-error *ngIf="allocated && form.get('totalCopies')?.hasError('min') && !form.get('totalCopies')?.hasError('quantity')">
+          Total must cover {{ allocated }} allocated copies.
+        </mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="book-editor-wide">
+        <mat-label>Cover image URL (optional)</mat-label>
+        <input matInput formControlName="coverImage" placeholder="https://… or assets/…">
+        <mat-error>Use an HTTPS URL or a project assets path.</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="book-editor-wide">
+        <mat-label>Description</mat-label>
+        <textarea matInput formControlName="description" rows="3" required></textarea>
+        <mat-error>Description is required.</mat-error>
+      </mat-form-field>
+    </div>
+    <p *ngIf="book" class="muted">Allocated copies: {{ book.borrowedCopies }} borrowed and {{ book.reservedCopies }} reserved.
+      Available copies are calculated from the new total.</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close [disabled]="saving">Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : book ? 'Save changes' : 'Add book' }}</button>
+  </mat-dialog-actions>
+</form>

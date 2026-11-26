@@ -1,0 +1,34 @@
+<h2 mat-dialog-title>{{ book.title }}</h2>
+<mat-dialog-content class="book-details">
+  <div class="book-details-intro">
+    <app-book-cover [book]="book"></app-book-cover>
+    <div>
+      <p class="muted">{{ book.author }}</p>
+      <app-book-status [status]="book.status"></app-book-status>
+      <p>{{ book.description }}</p>
+      <p *ngIf="book.demonstration" class="muted">Demonstration record</p>
+    </div>
+  </div>
+  <dl class="book-details-grid">
+    <div><dt>Book ID</dt><dd>{{ book.id }}</dd></div>
+    <div><dt>ISBN</dt><dd>{{ book.isbn || 'Not recorded' }}</dd></div>
+    <div><dt>Category</dt><dd>{{ categoryName(book.categoryId) }}</dd></div>
+    <div><dt>Publisher</dt><dd>{{ book.publisher }}</dd></div>
+    <div><dt>Publication year</dt><dd>{{ book.publicationYear }}</dd></div>
+    <div><dt>Edition</dt><dd>{{ book.edition }}</dd></div>
+    <div><dt>Language</dt><dd>{{ book.language }}</dd></div>
+    <div><dt>Shelf location</dt><dd>{{ book.shelfLocation }}</dd></div>
+    <div><dt>Total copies</dt><dd>{{ book.totalCopies }}</dd></div>
+    <div><dt>Available copies</dt><dd>{{ book.availableCopies }}</dd></div>
+    <div><dt>Borrowed copies</dt><dd>{{ book.borrowedCopies }}</dd></div>
+    <div><dt>Reserved copies</dt><dd>{{ book.reservedCopies }}</dd></div>
+    <div><dt>Date added</dt><dd>{{ book.dateAdded | date:'medium' }}</dd></div>
+    <div><dt>Last updated</dt><dd>{{ book.lastUpdated | date:'medium' }}</dd></div>
+    <div><dt>Cover image</dt><dd>{{ book.coverImage || 'BookSphere placeholder' }}</dd></div>
+  </dl>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Close</button>
+  <a mat-stroked-button [mat-dialog-close]="true" routerLink="/reservations" [queryParams]="{ book: book.id }">Create reservation</a>
+  <a mat-flat-button color="primary" [mat-dialog-close]="true" routerLink="/circulation" [queryParams]="{ book: book.id }">Issue book</a>
+</mat-dialog-actions>

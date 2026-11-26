@@ -1,0 +1,73 @@
+<a class="skip-link" href="#main-content" (click)="skipNavigation($event, main)">Skip to main content</a>
+<mat-sidenav-container class="shell" [autosize]="true">
+  <mat-sidenav id="primary-navigation" class="sidebar"
+    [class.sidebar-collapsed]="collapsed && !mobile"
+    [mode]="mobile ? 'over' : 'side'" [opened]="!mobile || mobileOpen"
+    [disableClose]="!mobile" (closedStart)="mobileOpen = false">
+    <a class="brand" routerLink="/dashboard" aria-label="BookSphere dashboard" (click)="mobileOpen = false">
+      <span class="brand-icon"><mat-icon>auto_stories</mat-icon></span>
+      <span class="brand-copy"><strong>BookSphere</strong><small>Library workspace</small></span>
+    </a>
+    <nav aria-label="Primary navigation" class="navigation">
+      <div class="navigation-label">Workspace</div>
+      <a *ngFor="let item of navigation" [routerLink]="['/', item.path]"
+        routerLinkActive="active" #activeLink="routerLinkActive" [attr.aria-current]="activeLink.isActive ? 'page' : null" [routerLinkActiveOptions]="navigationMatch"
+        [attr.aria-label]="item.label" [attr.title]="collapsed && !mobile ? item.label : null"
+        (click)="mobileOpen = false">
+        <mat-icon>{{ item.icon }}</mat-icon><span>{{ item.label }}</span>
+      </a>
+    </nav>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <header class="topbar">
+      <button mat-icon-button type="button" (click)="toggleNavigation()" aria-controls="primary-navigation"
+        [attr.aria-label]="(mobile ? mobileOpen : !collapsed) ? 'Collapse navigation' : 'Expand navigation'"
+        [attr.aria-expanded]="mobile ? mobileOpen : !collapsed">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <div class="search" role="search" aria-label="Workspace navigation search">
+        <mat-icon>search</mat-icon>
+        <input type="text" placeholder="Search pages" aria-label="Search workspace pages"
+          [formControl]="search" [matAutocomplete]="pages">
+        <mat-autocomplete #pages="matAutocomplete" (optionSelected)="goToPage($event.option.value)">
+          <ng-container *ngIf="searchResults$ | async as results">
+            <mat-option *ngFor="let item of results" [value]="item.path">{{ item.label }}</mat-option>
+            <mat-option *ngIf="results.length === 0" disabled>No matching pages</mat-option>
+          </ng-container>
+        </mat-autocomplete>
+      </div>
+
+      <div class="topbar-actions">
+        <button mat-icon-button type="button" aria-label="Notifications" [matMenuTriggerFor]="notifications">
+          <mat-icon>notifications_none</mat-icon>
+        </button>
+        <mat-menu #notifications="matMenu">
+          <button mat-menu-item disabled><mat-icon>notifications_none</mat-icon>No notifications to show</button>
+        </mat-menu>
+        <button class="profile" mat-button type="button" aria-label="Library staff profile menu" [matMenuTriggerFor]="profile">
+          <span class="avatar" aria-hidden="true">LS</span>
+          <span class="profile-name">Library staff</span>
+          <mat-icon>expand_more</mat-icon>
+        </button>
+        <mat-menu #profile="matMenu">
+          <a mat-menu-item routerLink="/settings"><mat-icon>settings</mat-icon>Workspace settings</a>
+        </mat-menu>
+      </div>
+    </header>
+
+    <app-data-status></app-data-status>
+    <main #main class="workspace" id="main-content" tabindex="-1">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <ol>
+          <li *ngIf="breadcrumb !== 'Dashboard'">
+            <a routerLink="/dashboard">Dashboard</a>
+            <mat-icon aria-hidden="true">chevron_right</mat-icon>
+          </li>
+          <li aria-current="page">{{ breadcrumb }}</li>
+        </ol>
+      </nav>
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

@@ -1,0 +1,91 @@
+<h2 mat-dialog-title>Member profile</h2>
+<mat-dialog-content>
+  <header class="member-profile-header">
+    <span class="member-avatar" aria-hidden="true">{{ member.initials }}</span>
+    <div>
+      <h3>{{ member.firstName }} {{ member.lastName }}</h3>
+      <div class="member-profile-meta">
+        <span class="muted">{{ member.membershipId }}</span>
+        <span class="member-status" [attr.data-status]="member.status">{{ member.status }}</span>
+        <span *ngIf="member.demonstration" class="muted member-note">Demonstration record</span>
+      </div>
+    </div>
+  </header>
+  <dl class="member-profile-grid">
+    <div><dt>Email</dt><dd>{{ member.email }}</dd></div>
+    <div><dt>Phone</dt><dd>{{ member.phone }}</dd></div>
+    <div class="member-form-wide"><dt>Address</dt><dd>{{ member.address }}</dd></div>
+    <div><dt>Membership type</dt><dd>{{ member.membershipType }}</dd></div>
+    <div><dt>Registration date</dt><dd>{{ member.registrationDate | date:'mediumDate' }}</dd></div>
+    <div><dt>Expiry date</dt><dd>{{ member.expiryDate | date:'mediumDate' }}</dd></div>
+    <div *ngIf="member.notes" class="member-form-wide"><dt>Notes</dt><dd>{{ member.notes }}</dd></div>
+  </dl>
+  <ng-container *ngIf="circulation$ | async as data">
+    <p *ngIf="!data.verified" class="muted">Circulation records are unavailable.</p>
+    <div class="member-circulation-grid" *ngIf="data.verified">
+      <section>
+        <h3>Current borrowed books</h3>
+        <p *ngIf="!data.current.length" class="muted">No active loans.</p>
+        <ul *ngIf="data.current.length" class="member-transaction-list">
+          <li *ngFor="let item of data.current">
+            {{ item.loan.bookTitle }} · Due {{ item.loan.dueAt | date:'mediumDate' }}
+            <strong *ngIf="item.overdue"> · {{ item.overdue }} {{ item.overdue === 1 ? 'day' : 'days' }} overdue</strong>
+            <span *ngIf="item.loan.demonstration" class="muted"> · Demo</span>
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h3>Borrowing history</h3>
+        <p *ngIf="!data.history.length" class="muted">No returned loans.</p>
+        <ul *ngIf="data.history.length" class="member-transaction-list">
+          <li *ngFor="let loan of data.history">
+            {{ loan.bookTitle }} · Returned {{ loan.returnedAt | date:'mediumDate' }}
+            <span *ngIf="loan.overdueDaysAtReturn"> · {{ loan.overdueDaysAtReturn }} days late</span>
+            <span *ngIf="loan.demonstration" class="muted"> · Demo</span>
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h3>Active reservations</h3>
+        <p *ngIf="!data.reservations.length" class="muted">No active reservations.</p>
+        <ul *ngIf="data.reservations.length" class="member-transaction-list">
+          <li *ngFor="let item of data.reservations">
+            {{ item.bookTitle }} · {{ item.status === 'ready' ? 'Ready for collection' : 'Waiting' }}
+            <span *ngIf="item.expiresAt"> · Collect by {{ item.expiresAt | date:'mediumDate' }}</span>
+            <span *ngIf="item.demonstration" class="muted"> · Demo</span>
+          </li>
+        </ul>
+      </section>
+      <section>
+        <h3>Fine balances</h3>
+        <p>Outstanding assessed balance <strong>{{ data.balance / 100 | currency:'INR' }}</strong></p>
+        <p>Accruing estimate <strong>{{ data.estimated / 100 | currency:'INR' }}</strong></p>
+        <p>Recorded payments <strong>{{ data.paid / 100 | currency:'INR' }}</strong></p>
+        <p>Fully paid fines <strong>{{ data.paidFines }}</strong></p>
+        <p *ngIf="data.restricted"><strong>Borrowing restricted by assessed fines</strong></p>
+        <p *ngIf="!data.restricted" class="muted">No fine-based borrowing restriction</p>
+      </section>
+      <section>
+        <h3>Fine history</h3>
+        <p *ngIf="!data.fines.length" class="muted">No assessed fines.</p>
+        <ul *ngIf="data.fines.length" class="member-transaction-list">
+          <li *ngFor="let fine of data.fines">{{ fine.bookTitle }} · {{ fine.assessedMinor / 100 | currency:'INR' }}
+            · {{ fine.status }}<span *ngIf="fine.demonstration" class="muted"> · Demo</span></li>
+        </ul>
+      </section>
+      <section>
+        <h3>Payment history</h3>
+        <p *ngIf="!data.payments.length" class="muted">No recorded payments.</p>
+        <ul *ngIf="data.payments.length" class="member-transaction-list">
+          <li *ngFor="let payment of data.payments">{{ payment.paidOn | date:'mediumDate' }} ·
+            {{ payment.amountMinor / 100 | currency:'INR' }} · {{ payment.method }}</li>
+        </ul>
+      </section>
+    </div>
+  </ng-container>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Close</button>
+  <button *ngIf="!readOnly" mat-stroked-button type="button" [mat-dialog-close]="'edit'">Edit profile</button>
+  <button *ngIf="!readOnly" mat-flat-button color="primary" type="button" [mat-dialog-close]="'renew'">Renew membership</button>
+</mat-dialog-actions>

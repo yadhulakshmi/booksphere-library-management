@@ -1,0 +1,85 @@
+<ng-container *ngIf="view$ | async as view; else loading">
+  <div class="analytics-heading">
+    <app-page-heading title="Dashboard" [description]="view.source.libraryName + ' · Library operations'"></app-page-heading>
+    <mat-form-field appearance="outline">
+      <mat-label>Analytics period</mat-label>
+      <mat-select [value]="period.value" (selectionChange)="period.next($event.value)">
+        <mat-option *ngFor="let days of ranges" [value]="days">Last {{ days }} days</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <p *ngFor="let warning of view.source.warnings" class="book-notice" role="status">{{ warning }}</p>
+  <p *ngIf="view.demo" class="muted analytics-demo">Totals include labeled demonstration records already in this library.</p>
+
+  <section aria-labelledby="snapshot-title">
+    <h2 id="snapshot-title">Current snapshot</h2>
+    <div class="analytics-metrics">
+      <a class="surface analytics-metric" *ngFor="let item of view.metrics" [routerLink]="item.path"
+        [queryParams]="item.money ? { tab: 'fines' } : null">
+        <span class="feature-icon"><mat-icon>{{ item.icon }}</mat-icon></span>
+        <span><span class="muted">{{ item.label }}</span>
+          <strong>{{ item.value === null ? '—' : item.money ? (item.value / 100 | currency:'INR') : (item.value | number) }}</strong>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <section aria-labelledby="analytics-period-title" class="analytics-period">
+    <div class="analytics-period-heading">
+      <div><h2 id="analytics-period-title">Selected period</h2>
+        <p class="muted">{{ view.data.period.start | date:'mediumDate' }} to {{ view.data.period.end | date:'mediumDate' }}</p></div>
+      <a class="surface analytics-metric analytics-payment" routerLink="/overdue" [queryParams]="{ tab: 'payments' }">
+        <span class="feature-icon"><mat-icon>payments</mat-icon></span>
+        <span><span class="muted">Collected payments</span>
+          <strong>{{ view.source.inventoryAvailable ? (view.data.collected / 100 | currency:'INR') : '—' }}</strong></span>
+      </a>
+    </div>
+    <div class="analytics-charts">
+      <app-analytics-chart *ngFor="let chart of view.data.charts; index as index; trackBy: chartKey" [data]="chart"
+        [class.analytics-wide]="index === 0 || index === 4"></app-analytics-chart>
+    </div>
+  </section>
+
+  <div class="analytics-panels">
+    <section class="surface analytics-panel">
+      <h2>Attention required</h2>
+      <ul class="analytics-links">
+        <li *ngFor="let alert of view.alerts">
+          <a [routerLink]="alert.path" [queryParams]="alert.money ? { tab: 'fines' } : null">
+            <mat-icon>{{ alert.icon }}</mat-icon><span>{{ alert.label }}</span>
+            <strong>{{ alert.value === null ? '—' : alert.money ? (alert.value / 100 | currency:'INR') : (alert.value | number) }}</strong>
+          </a>
+        </li>
+      </ul>
+    </section>
+    <section class="surface analytics-panel">
+      <h2>Quick actions</h2>
+      <ul class="analytics-links">
+        <li *ngFor="let action of actions"><a [routerLink]="action.path" [queryParams]="action.action ? { action: action.action } : null">
+          <mat-icon>{{ action.icon }}</mat-icon><span>{{ action.label }}</span></a></li>
+      </ul>
+    </section>
+    <section class="surface analytics-panel">
+      <h2>Most borrowed books</h2>
+      <ol class="analytics-popular" *ngIf="view.data.popular.length; else noLoans">
+        <li *ngFor="let book of view.data.popular"><span>{{ book.rank }}.</span>
+          <div><strong>{{ book.title }}</strong><small *ngIf="book.author || book.categoryId !== 'unknown'" class="muted">
+            {{ book.author }}{{ book.author && book.categoryId !== 'unknown' ? ' · ' : '' }}{{ book.categoryId === 'unknown' ? '' : categoryName(book.categoryId) }}
+          </small></div><strong>{{ book.borrowings }}</strong>
+        </li>
+      </ol>
+      <ng-template #noLoans><p class="muted">No issues recorded in this period.</p></ng-template>
+    </section>
+    <section class="surface analytics-panel">
+      <h2>Recent activity</h2>
+      <ul class="analytics-activity" *ngIf="view.activity.length; else noActivity">
+        <li *ngFor="let item of view.activity">
+          <strong>{{ item.title }}</strong><span>{{ item.description }}<small *ngIf="item.demo"> · Demo</small></span>
+          <time [attr.datetime]="item.occurredAt">{{ item.occurredAt | date:'medium' }}</time>
+        </li>
+      </ul>
+      <ng-template #noActivity><p class="muted">No activity has been recorded.</p></ng-template>
+    </section>
+  </div>
+</ng-container>
+<ng-template #loading><p role="status">Loading library analytics…</p></ng-template>

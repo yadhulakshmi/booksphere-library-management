@@ -1,0 +1,35 @@
+<app-page-heading title="Library Settings" description="Manage library information and set the policies used for future transactions."></app-page-heading>
+<p *ngIf="warning$ | async as warning" class="book-notice" role="status">{{ warning }}</p>
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <div class="settings-sections">
+    <section *ngFor="let section of sections" class="surface settings-card">
+      <h2>{{ section.heading }}</h2>
+      <p class="muted" *ngIf="section.note">{{ section.note }}</p>
+      <div class="settings-fields">
+        <mat-form-field *ngFor="let field of section.fields" appearance="outline">
+          <mat-label>{{ field.label }}</mat-label>
+          <span matPrefix *ngIf="field.money">₹&nbsp;</span>
+          <input matInput [id]="'library-setting-' + field.key" [type]="field.type || 'text'" [attr.inputmode]="field.money ? 'decimal' : null"
+            [formControlName]="field.key" [attr.aria-describedby]="field.key === 'closingTime' && form.hasError('timeOrder') ? 'settings-time-error' : null" required>
+          <mat-error>{{ field.error }}</mat-error>
+        </mat-form-field>
+      </div>
+      <p *ngIf="section === sections[0] && form.hasError('timeOrder') && form.get('closingTime')?.touched"
+        id="settings-time-error" role="alert" class="circulation-error">Closing time must be later than opening time.</p>
+    </section>
+  </div>
+  <div class="surface settings-actions">
+    <button mat-stroked-button type="button" (click)="restore(defaults)" [disabled]="saving">Restore default settings</button>
+    <p role="status">{{ form.dirty ? 'Unsaved changes' : '' }}</p>
+    <button mat-button type="button" (click)="cancel()" [disabled]="!form.dirty || saving">Cancel changes</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="!form.dirty || saving">{{ saving ? 'Saving…' : 'Save changes' }}</button>
+  </div>
+</form>
+<ng-template #defaults>
+  <h2 mat-dialog-title>Restore default settings?</h2>
+  <mat-dialog-content>Restore the default library information and policies. The defaults apply to future transactions.</mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button" cdkFocusInitial>Cancel</button>
+    <button mat-flat-button color="primary" [mat-dialog-close]="true" type="button">Restore defaults</button>
+  </mat-dialog-actions>
+</ng-template>

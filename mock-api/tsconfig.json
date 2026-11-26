@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "../src/app",
+    "outDir": "../.angular/mock-api/domain",
+    "module": "commonjs",
+    "types": [],
+    "sourceMap": false
+  },
+  "files": [
+    "../src/app/core/api-routes.ts",
+    "../src/app/core/library-transaction.ts",
+    "../src/app/core/circulation-migration.ts",
+    "../src/app/core/member-seed.ts"
+  ]
+}

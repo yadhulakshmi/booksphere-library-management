@@ -1,0 +1,47 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+<form [formGroup]="form" (ngSubmit)="confirm()" novalidate>
+  <mat-dialog-content>
+    <ng-container *ngIf="loan">
+      <p><strong>{{ loan.bookTitle }}</strong><br>{{ loan.memberName }} · {{ loan.membershipId }}</p>
+      <dl class="circulation-details">
+        <div><dt>Loan ID</dt><dd>{{ loan.id }}</dd></div>
+        <div><dt>Borrow date</dt><dd>{{ loan.checkedOutAt | date:'mediumDate' }}</dd></div>
+        <div><dt>Current due date</dt><dd>{{ loan.dueAt | date:'mediumDate' }}</dd></div>
+        <ng-container *ngIf="data.kind === 'renew'">
+          <div><dt>Proposed due date</dt><dd>{{ proposedDue | date:'mediumDate' }}</dd></div>
+          <div><dt>Previous renewals</dt><dd>{{ loan.renewals }}</dd></div>
+          <div><dt>Remaining renewals</dt><dd>{{ renewalsRemaining }}</dd></div>
+        </ng-container>
+      </dl>
+      <ng-container *ngIf="data.kind === 'return'">
+        <mat-form-field appearance="outline" class="circulation-field">
+          <mat-label>Return date</mat-label>
+          <input matInput type="date" formControlName="date" [min]="loan.checkedOutAt" [max]="today" required>
+          <mat-error>Choose a date from the borrow date through today.</mat-error>
+        </mat-form-field>
+        <p *ngIf="overdue" role="status">{{ overdue }} calendar {{ overdue === 1 ? 'day' : 'days' }} overdue.</p>
+      </ng-container>
+    </ng-container>
+    <ng-container *ngIf="reservation">
+      <p><strong>{{ reservation.bookTitle }}</strong><br>{{ reservation.memberName }} · {{ reservation.membershipId }}</p>
+      <dl *ngIf="data.kind === 'details'" class="circulation-details">
+        <div><dt>Reservation ID</dt><dd>{{ reservation.id }}</dd></div>
+        <div><dt>Status</dt><dd>{{ labels[reservation.status] }}</dd></div>
+        <div><dt>Book ID</dt><dd>{{ reservation.bookId }}</dd></div>
+        <div><dt>Member ID</dt><dd>{{ reservation.memberId }}</dd></div>
+        <div><dt>Placed</dt><dd>{{ reservation.placedAt | date:'mediumDate' }}</dd></div>
+        <div><dt>Queue position</dt><dd>{{ position ?? '—' }}</dd></div>
+        <div><dt>Ready for collection</dt><dd>{{ (reservation.readyAt | date:'mediumDate') || '—' }}</dd></div>
+        <div><dt>Collection deadline</dt><dd>{{ (reservation.expiresAt | date:'mediumDate') || '—' }}</dd></div>
+        <div><dt>Fulfilled</dt><dd>{{ (reservation.fulfilledAt | date:'mediumDate') || '—' }}</dd></div>
+      </dl>
+      <p *ngIf="data.kind === 'cancel'">Confirm cancellation. Any allocated copy will be offered to the next eligible member.</p>
+    </ng-container>
+    <p class="muted" *ngIf="loan?.demonstration || reservation?.demonstration">Demonstration transaction</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button" cdkFocusInitial [disabled]="saving">{{ data.kind === 'details' ? 'Close' : 'Back' }}</button>
+    <button *ngIf="data.kind !== 'details'" mat-flat-button type="submit" [color]="data.kind === 'cancel' ? 'warn' : 'primary'"
+      [disabled]="saving">{{ saving ? 'Saving…' : title }}</button>
+  </mat-dialog-actions>
+</form>

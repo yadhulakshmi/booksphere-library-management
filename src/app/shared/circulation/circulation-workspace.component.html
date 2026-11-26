@@ -1,0 +1,101 @@
+<div class="inventory-heading">
+  <app-page-heading [title]="mode === 'loans' ? 'Borrow and Return' : 'Reservations'"
+    [description]="mode === 'loans' ? 'Issue books, manage due dates, and record returns.' : 'Manage reservation queues and collect allocated copies.'"></app-page-heading>
+  <button mat-flat-button color="primary" type="button" (click)="entry({ mode: mode === 'loans' ? 'issue' : 'reserve' })">
+    <mat-icon>{{ mode === 'loans' ? 'add' : 'bookmark_add' }}</mat-icon>
+    {{ mode === 'loans' ? 'Issue book' : 'Create reservation' }}
+  </button>
+</div>
+<p *ngIf="warning$ | async as warning" class="book-notice" role="status">{{ warning }}</p>
+<ng-container *ngIf="view$ | async as view">
+  <section class="inventory-summary" aria-label="Workspace summary">
+    <div *ngFor="let item of view.summary" class="surface"><span>{{ item.label }}</span><strong>{{ item.count }}</strong></div>
+  </section>
+  <section class="surface circulation-panel" aria-label="Transaction directory">
+    <mat-tab-group *ngIf="mode === 'loans'; else reservations" (selectedIndexChange)="tab($event)">
+      <mat-tab label="Active loans"><ng-template matTabContent><ng-container *ngTemplateOutlet="directory"></ng-container></ng-template></mat-tab>
+      <mat-tab label="Loan history"><ng-template matTabContent><ng-container *ngTemplateOutlet="directory"></ng-container></ng-template></mat-tab>
+    </mat-tab-group>
+    <ng-template #reservations><ng-container *ngTemplateOutlet="directory"></ng-container></ng-template>
+
+    <ng-template #directory>
+      <div class="circulation-controls">
+        <div class="circulation-filters" [formGroup]="filters" role="search" aria-label="Search and filter transactions">
+          <mat-form-field appearance="outline" class="circulation-search"><mat-label>Search {{ mode }}</mat-label>
+            <mat-icon matPrefix>search</mat-icon>
+            <input matInput formControlName="search" placeholder="Book, member, or transaction ID">
+          </mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="">All statuses</mat-option>
+              <ng-container *ngFor="let status of mode === 'loans' ? loanStatuses : reservationStatuses">
+                <mat-option *ngIf="view.query.tab !== 0 || status !== 'Returned'" [value]="status">{{ status }}</mat-option>
+              </ng-container>
+            </mat-select>
+          </mat-form-field>
+          <ng-container *ngIf="mode === 'loans'">
+            <mat-form-field appearance="outline"><mat-label>Borrowed from</mat-label><input matInput type="date" formControlName="start"></mat-form-field>
+            <mat-form-field appearance="outline"><mat-label>Borrowed through</mat-label><input matInput type="date" formControlName="end"></mat-form-field>
+          </ng-container>
+          <button mat-stroked-button type="button" (click)="clear()">Clear filters</button>
+        </div>
+        <p *ngIf="filters.value.start && filters.value.end && filters.value.start > filters.value.end" role="alert" class="circulation-error">
+          The end of the date range must be on or after the start.
+        </p>
+        <div class="circulation-meta">
+          <span aria-live="polite">{{ view.length }} of {{ view.total }} records</span>
+          <span *ngIf="view.demo">Includes demonstration transactions</span>
+        </div>
+      </div>
+      <div *ngIf="view.length; else empty" class="circulation-table-scroll" role="region" aria-label="Transactions" tabindex="0">
+        <table mat-table [dataSource]="view.rows" matSort [matSortActive]="view.query.sort" [matSortDirection]="view.query.direction"
+          matSortDisableClear (matSortChange)="sort($event)" class="circulation-table">
+          <ng-container *ngFor="let column of columns" [matColumnDef]="column.key">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ column.label }}</th>
+            <td mat-cell *matCellDef="let row">
+              <ng-container [ngSwitch]="column.key">
+                <span *ngSwitchCase="'status'" class="circulation-badge" [attr.data-status]="row.status">{{ row.status }}</span>
+                <ng-container *ngSwitchCase="'id'">{{ row.id }}<small *ngIf="row.demo" class="circulation-demo">Demo</small></ng-container>
+                <ng-container *ngSwitchDefault>
+                  {{ column.date ? ((row.cells[column.key] | date:'mediumDate') || '—') : (row.cells[column.key] ?? '—') }}
+                </ng-container>
+              </ng-container>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let row">
+              <ng-container *ngIf="row.loan as loan">
+                <ng-container *ngIf="!loan.returnedAt">
+                  <button mat-icon-button type="button" matTooltip="Return book" [attr.aria-label]="'Return ' + row.id"
+                    (click)="action({ kind: 'return', loan: loan })"><mat-icon>assignment_return</mat-icon></button>
+                  <button mat-icon-button type="button" matTooltip="Renew loan" [attr.aria-label]="'Renew ' + row.id"
+                    (click)="action({ kind: 'renew', loan: loan })"><mat-icon>update</mat-icon></button>
+                </ng-container>
+              </ng-container>
+              <ng-container *ngIf="row.reservation as item">
+                <button mat-icon-button type="button" matTooltip="Reservation details" [attr.aria-label]="'View ' + row.id"
+                  (click)="action({ kind: 'details', reservation: item, position: view.positions.get(row.id) })"><mat-icon>visibility</mat-icon></button>
+                <button *ngIf="item.status === 'ready'" mat-icon-button type="button" matTooltip="Collect reservation"
+                  [attr.aria-label]="'Collect ' + row.id" (click)="collect(item)"><mat-icon>library_add_check</mat-icon></button>
+                <button *ngIf="activeReservation(item)" mat-icon-button type="button" matTooltip="Cancel reservation"
+                  [attr.aria-label]="'Cancel ' + row.id" (click)="action({ kind: 'cancel', reservation: item })"><mat-icon>cancel</mat-icon></button>
+              </ng-container>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columnKeys"></tr>
+          <tr mat-row *matRowDef="let row; columns: columnKeys"></tr>
+        </table>
+      </div>
+      <ng-template #empty>
+        <div class="empty-state">
+          <span class="feature-icon"><mat-icon>search_off</mat-icon></span>
+          <h2>{{ view.total ? 'No matching transactions' : 'No transactions to show' }}</h2>
+          <button *ngIf="view.total" mat-stroked-button type="button" (click)="clear()">Clear filters</button>
+        </div>
+      </ng-template>
+      <mat-paginator *ngIf="view.length" aria-label="Transaction pages" [length]="view.length" [pageIndex]="view.index"
+        [pageSize]="view.query.size" [pageSizeOptions]="[5, 10, 25]" (page)="paginate($event)" showFirstLastButtons></mat-paginator>
+    </ng-template>
+  </section>
+</ng-container>

@@ -1,0 +1,60 @@
+<app-page-heading title="Book Catalogue"
+  description="Browse the library collection and check copy availability."></app-page-heading>
+
+<ng-container *ngIf="browser.view$ | async as view; else loading">
+  <p *ngIf="storageWarning$ | async as warning" class="book-notice" role="status">{{ warning }}</p>
+  <section class="surface book-controls" aria-label="Catalogue controls">
+    <app-book-filters #filters [languages]="view.languages" (filtersChange)="browser.filter($event)"></app-book-filters>
+    <div class="catalogue-toolbar">
+      <div class="book-results" aria-live="polite">
+        <strong>{{ view.total }} {{ view.total === 1 ? 'title' : 'titles' }}</strong>
+        <span *ngIf="view.length !== view.total" class="muted"> · {{ view.length }} matching</span>
+        <span *ngIf="view.demo" class="book-demo">Includes demonstration records</span>
+      </div>
+      <mat-form-field appearance="outline" class="catalogue-sort">
+        <mat-label>Sort by</mat-label>
+        <mat-select [value]="sortOptions[0].sort" (selectionChange)="browser.sort($event.value)">
+          <mat-option *ngFor="let option of sortOptions" [value]="option.sort">{{ option.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <div class="catalogue-layout" aria-label="Catalogue view" role="group">
+        <button mat-icon-button type="button" (click)="layout = 'grid'" matTooltip="Grid view"
+          aria-label="Grid view" [attr.aria-pressed]="layout === 'grid'"><mat-icon>grid_view</mat-icon></button>
+        <button mat-icon-button type="button" (click)="layout = 'list'" matTooltip="List view"
+          aria-label="List view" [attr.aria-pressed]="layout === 'list'"><mat-icon>view_list</mat-icon></button>
+      </div>
+    </div>
+  </section>
+
+  <div *ngIf="view.length; else noResults" class="catalogue-items" [class.catalogue-list]="layout === 'list'">
+    <article class="surface catalogue-card" *ngFor="let book of view.page; trackBy: trackBook">
+      <app-book-cover [book]="book"></app-book-cover>
+      <div class="catalogue-card-info">
+        <span class="catalogue-category">{{ categoryName(book.categoryId) }}</span>
+        <h2>{{ book.title }}</h2>
+        <p class="muted">{{ book.author }}</p>
+        <div class="catalogue-stock">
+          <app-book-status [status]="book.status"></app-book-status>
+          <span>{{ book.availableCopies }} / {{ book.totalCopies }} copies available</span>
+        </div>
+        <button mat-stroked-button type="button" [attr.aria-label]="'View details for ' + book.title"
+          (click)="showDetails(book)">View details</button>
+      </div>
+    </article>
+  </div>
+
+  <ng-template #noResults>
+    <section class="surface empty-state">
+      <span class="feature-icon"><mat-icon>search_off</mat-icon></span>
+      <h2>{{ view.total ? 'No matching books' : 'The catalogue is empty' }}</h2>
+      <p *ngIf="view.total">Try a different search or clear the filters.</p>
+      <button *ngIf="view.total" mat-stroked-button type="button" (click)="filters.clear()">Clear filters</button>
+    </section>
+  </ng-template>
+
+  <mat-paginator *ngIf="view.length" class="book-paginator" aria-label="Catalogue pages"
+    [length]="view.length" [pageIndex]="view.pageIndex" [pageSize]="view.pageSize"
+    [pageSizeOptions]="[6, 12, 24]" (page)="browser.paginate($event)" showFirstLastButtons></mat-paginator>
+</ng-container>
+
+<ng-template #loading><p role="status">Loading the catalogue…</p></ng-template>
